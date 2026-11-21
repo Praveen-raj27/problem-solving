@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JS Problems – Code Viewer</title>
+<style>
+:root{
+  --bg:#f3f5f2;--panel:#fff;--ink:#1d2a2a;--muted:#5d6b6b;--line:#d5dcd8;--accent:#0f6b5c;
+  --code-bg:#14201f;--code-ink:#dfe9e6;--kw:#e6b673;--str:#9ad3a6;--num:#8cc4e8;--com:#7f9490;--fn:#f0a0b0;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1716;--panel:#16211f;--ink:#e4ecea;--muted:#8fa19d;--line:#2a3a37;--accent:#5fd0b8;--code-bg:#0b1211;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1716;--panel:#16211f;--ink:#e4ecea;--muted:#8fa19d;--line:#2a3a37;--accent:#5fd0b8;--code-bg:#0b1211;
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Serif 4",Georgia,serif}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav{border-right:1px solid var(--line);padding:24px 16px;background:var(--panel);position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}
+nav h1{font:700 20px/1.2 "IBM Plex Sans",system-ui,sans-serif;margin:0 0 4px}
+nav p{margin:0 0 20px;color:var(--muted);font-size:14px}
+nav button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:10px 12px;border-radius:6px;font:inherit;cursor:pointer;border-left:3px solid transparent}
+nav button small{display:block;color:var(--muted);font-size:13px}
+nav button:hover{background:var(--bg)}
+nav button[aria-current="true"]{background:var(--bg);border-left-color:var(--accent);font-weight:600}
+nav button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding:28px;min-width:0;max-width:900px}
+main h2{font:700 26px/1.2 "IBM Plex Sans",system-ui,sans-serif;margin:0 0 6px}
+.desc{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.note{border-left:3px solid #c9822b;background:var(--panel);padding:10px 14px;margin:0 0 16px;font-size:15px;max-width:70ch}
+.bar{display:flex;gap:8px;margin-bottom:10px}
+.btn{font:600 14px "IBM Plex Sans",system-ui,sans-serif;padding:8px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.btn.alt{background:none;color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06201b}:root:not([data-theme="light"]) .btn.alt{color:var(--accent)}}
+.code{overflow-x:auto;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:16px;margin:0;font:14px/1.6 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;tab-size:4}
+.code .k{color:var(--kw)}.code .s{color:var(--str)}.code .n{color:var(--num)}.code .c{color:var(--com)}.code .f{color:var(--fn)}
+.out{margin-top:14px}
+.out h3{font:600 15px "IBM Plex Sans",system-ui,sans-serif;margin:0 0 6px}
+.out pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;overflow-x:auto;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;min-height:44px}
+@media (max-width:760px){
+  .app{grid-template-columns:150px 1fr}
+  nav{padding:14px 8px}
+  nav h1{font-size:16px}
+  nav p{display:none}
+  nav button{padding:8px;font-size:14px;line-height:1.3}
+  nav button small{display:none}
+  main{padding:18px 14px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <h1>JS problem solutions</h1>
+    <p>Pick a problem to read its code.</p>
+    <div class="list" id="list"></div>
+  </nav>
+  <main id="main"></main>
+</div>
+<script>
+var DECL = /^(?:export\s+)?(?:async\s+function|function|class|const|let|var)\b/;
+var NAME = /^(?:export\s+)?(?:async\s+)?(?:function\s*\*?\s*(\w+)|class\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?(?:function\b|\(|\w+\s*=>))/;
+var LOG = /^\s*console\.log\s*\(/;
+var META = /^\s*\/\/\s*@(title|desc|note)\s+(.*?)\s*$/;
+var SEP = /^\s*\/\/\s*-{3,}\s*$/;
+var PROBLEMS = [];
+
+// PARSER START
+function scanLines(src){
+  var lines = src.replace(/\r\n?/g, "\n").split("\n"), top = [], depth = 0, tpl = false, blk = false;
+  lines.forEach(function(line){
+    top.push(depth === 0 && !tpl && !blk);
+    var q = null;
+    for(var i = 0; i < line.length; i++){
+      var c = line[i], n = line[i+1];
+      if(blk){ if(c === "*" && n === "/"){ blk = false; i++; } continue; }
+      if(tpl){ if(c === "\\"){ i++; continue; } if(c === "`") tpl = false; continue; }
+      if(q){ if(c === "\\"){ i++; continue; } if(c === q) q = null; continue; }
+      if(c === "/" && n === "/") break;
+      if(c === "/" && n === "*"){ blk = true; i++; continue; }
+      if(c === "'" || c === '"'){ q = c; continue; }
+      if(c === "`"){ tpl = true; continue; }
+      if("([{".indexOf(c) > -1) depth++;
+      else if(")]}".indexOf(c) > -1) depth = Math.max(0, depth - 1);
+    }
+  });
+  return { lines: lines, top: top };
+}
+function trimBlank(a){
+  a = a.slice();
+  while(a.length && !a[0].trim()) a.shift();
+  while(a.length && !a[a.length-1].trim()) a.pop();
+  return a;
+}
+function isComment(l){ return !l.trim() || /^\s*\/\//.test(l); }
+function humanize(name){
+  var t = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").replace(/[_-]+/g, " ")
+    .split(" ").map(function(w){ return /^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase(); }).join(" ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function parseProblems(src){
+  var sc = scanLines(src), lines = sc.lines, top = sc.top, chunks = [], cur = [], hasLog = false;
+  function flush(){
+    var c = trimBlank(cur);
+    if(c.some(function(l){ return !isComment(l); })) chunks.push(c);
+    cur = []; hasLog = false;
+  }
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i];
+    if(top[i] && SEP.test(line)){ flush(); continue; }
+    if(top[i] && hasLog && DECL.test(line)){
+      var carry = [];
+      while(cur.length && isComment(cur[cur.length-1])) carry.unshift(cur.pop());
+      flush(); cur = carry;
+    }
+    cur.push(line);
+    if(top[i] && LOG.test(line)) hasLog = true;
+  }
+  flush();
+  return chunks.map(function(c, n){
+    var meta = {}, body = [], name = "";
+    c.forEach(function(l){ var m = META.exec(l); if(m) meta[m[1]] = m[2]; else body.push(l); });
+    body = trimBlank(body);
+    for(var j = 0; j < body.length && !LOG.test(body[j]); j++){
+      var m = NAME.exec(body[j]);
+      if(m) name = m[1] || m[2] || m[3];
+    }
+    return { title: meta.title || (name ? humanize(name) : "Problem " + (n+1)), sub: name, desc: meta.desc || "", note: meta.note || "", code: body.join("\n") };
+  });
+}
+// PARSER END
+
+var KW = /^(const|let|var|return|if|else|for|of|new|function|class|constructor|while|do|break|continue|switch|case|async|await|this|true|false|null|undefined)$/;
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function highlight(src){
+  var re = /(\/\/.*)|('[^']*'|"[^"]*")|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)(\s*\()?|([\s\S])/g, out = "", m;
+  while((m = re.exec(src))){
+    if(m[1]) out += '<span class="c">'+esc(m[1])+'</span>';
+    else if(m[2]) out += '<span class="s">'+esc(m[2])+'</span>';
+    else if(m[3]) out += '<span class="n">'+m[3]+'</span>';
+    else if(m[4]){
+      if(KW.test(m[4])) out += '<span class="k">'+m[4]+'</span>'+(m[5]?esc(m[5]):"");
+      else if(m[5]) out += '<span class="f">'+m[4]+'</span>'+esc(m[5]);
+      else out += m[4];
+    } else out += esc(m[6]);
+  }
+  return out;
+}
+function fmt(v){ try { return typeof v === "string" ? v : JSON.stringify(v); } catch(e){ return String(v); } }
+function runCode(src){
+  var lines = [], fake = { log: function(){ lines.push(Array.prototype.map.call(arguments, fmt).join(" ")); } };
+  try { new Function("console", src)(fake); } catch(e){ lines.push("Error: " + e.message); }
+  return lines.join("\n") || "(no output)";
+}
+
+var list = document.getElementById("list"), main = document.getElementById("main");
+
+function show(i){
+  var p = PROBLEMS[i];
+  Array.prototype.forEach.call(list.children, function(b, j){ b.setAttribute("aria-current", j === i ? "true" : "false"); });
+  main.innerHTML =
+    '<h2>'+esc(p.title)+'</h2>' + (p.desc ? '<p class="desc">'+esc(p.desc)+'</p>' : '') +
+    (p.note ? '<p class="note">'+esc(p.note)+'</p>' : '') +
+    '<div class="bar"><button class="btn" id="copy" type="button">Copy code</button><button class="btn alt" id="run" type="button">Run code</button></div>' +
+    '<pre class="code"><code>'+highlight(p.code)+'</code></pre>' +
+    '<div class="out" hidden id="out"><h3>Output</h3><pre id="outText"></pre></div>';
+  document.getElementById("run").onclick = function(){
+    document.getElementById("outText").textContent = runCode(p.code);
+    document.getElementById("out").hidden = false;
+  };
+  document.getElementById("copy").onclick = function(){
+    var btn = this;
+    function done(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy code"; }, 1500); }
+    function fallback(){
+      var ta = document.createElement("textarea"); ta.value = p.code; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch(e){ btn.textContent = "Copy failed"; }
+      document.body.removeChild(ta);
+    }
+    try { navigator.clipboard.writeText(p.code).then(done, fallback); } catch(e){ fallback(); }
+  };
+  if (location.hash !== "#p" + (i+1)) history.replaceState(null, "", "#p" + (i+1));
+}
+function fromHash(){
+  if(!PROBLEMS.length){ main.innerHTML = "<h2>No problems found</h2><p class=\"desc\">Add a solution followed by a console.log line to code.js.</p>"; return; }
+  var m = /^#p(\d+)$/.exec(location.hash), i = m ? parseInt(m[1], 10) - 1 : 0;
+  show(i >= 0 && i < PROBLEMS.length ? i : 0);
+}
+function load(text){
+  PROBLEMS = parseProblems(text);
+  list.innerHTML = "";
+  PROBLEMS.forEach(function(p, i){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = esc(p.title) + (p.sub ? "<small>" + esc(p.sub) + "</small>" : "");
+    b.onclick = function(){ show(i); };
+    list.appendChild(b);
+  });
+  fromHash();
+}
+function showError(){
+  main.innerHTML = '<h2>Could not load code.js</h2><p class="desc">Keep code.js in the same folder as index.html and open this page through a local server. Browsers block reading files when index.html is opened by double-click. For example, run npx serve in this folder, or use VS Code Live Server.</p>';
+}
+window.addEventListener("hashchange", function(){ if(PROBLEMS.length) fromHash(); });
+
+fetch("code.js?v=" + Date.now())
+  .then(function(r){ if(!r.ok) throw new Error("not found"); return r.text(); })
+  .then(load)
+  .catch(showError);
+</script>
+</body>
+</html>
