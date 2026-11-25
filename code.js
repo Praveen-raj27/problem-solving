@@ -409,3 +409,52 @@ console.log(lru.get(1))
 lru.put(3, 'three')
 console.log(lru.get(2))
 console.log(lru.get(3))
+
+
+let apiCount = 0
+
+const fetchApi=()=>{
+    return new Promise((resolve, reject)=>{
+    let apiRes = {
+        name:'Praveenraj',
+        email:'praveen@gmail.com'
+    }
+    apiCount++
+    let statusCode = 300;
+    if( apiCount === 3) statusCode = 200
+
+    if(statusCode === 200){
+        resolve(apiRes)
+    }else{
+        reject('Something went wrong')
+    }
+    })
+   
+}
+
+
+
+
+const retry = (fn, retries, delay)=>{
+    return new Promise((resolve, reject)=>{
+        fn()
+        .then(res=> resolve(res))
+        .catch(err=> {
+            if (retries === 0) {
+                reject(err);
+                return;
+            }
+            console.log(`Retries remaining: ${retries}`);
+            setTimeout(()=>{
+                retry(fn, retries-1, delay)
+                .then(resolve)
+                .catch(reject);
+            }, delay)
+            
+        })
+    })
+}
+
+retry(fetchApi, 3, 2000)
+    .then((res)=> console.log(res))
+    .catch((err)=> console.log(err))
