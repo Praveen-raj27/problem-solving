@@ -17,7 +17,7 @@ const findAverage=(arr)=>{
 }
 
 console.log(findAverage([1, 2, 3, 4, 5, 6]))
-
+/* --- */
 const windowAverage=(arr, size)=>{
     let windowSum = 0
     let result=[]
@@ -37,10 +37,14 @@ const windowAverage=(arr, size)=>{
 }
 console.log(windowAverage([1,2,3,4,5,6,7,8,9,10],3))
 
+/* --- */
+
 const isStringRotated=(str1,str2)=>{
     return (str1+str1).includes(str2)
 }
 console.log(isStringRotated('TEA','TAE'))
+
+/* --- */
 
 const twoSum=(arr, target)=>{
     let map = new Map()
@@ -56,6 +60,8 @@ const twoSum=(arr, target)=>{
 
 console.log(twoSum([1,2,3,4,5],9))
 
+/* --- */
+
 const findNonRepeatingChars=(str)=>{
     let map = new Map()
     for(let i=0;i<str.length;i++){
@@ -69,6 +75,8 @@ const findNonRepeatingChars=(str)=>{
 }
 console.log(findNonRepeatingChars('aabbbccdee'))
 
+/* --- */
+
 const groupAnagrams=(strs)=>{
     const map = new Map()
     for(const s of strs){
@@ -80,6 +88,8 @@ const groupAnagrams=(strs)=>{
 }
 
 console.log(groupAnagrams(['eat','tea','tan','ate','nat','bat']))
+
+/* --- */
 
 const moveZeros=(arr)=>{
     let insertPos = 0
@@ -93,6 +103,8 @@ const moveZeros=(arr)=>{
 }
 
 console.log(moveZeros([0,1,0,3,12]))
+
+/* --- */
 
 const mergeSorted=(a, b)=>{
     const result = []
@@ -111,6 +123,8 @@ const mergeSorted=(a, b)=>{
 
 console.log(mergeSorted([1,3,5,7],[2,4,6,8,10]))
 
+/* --- */
+
 const mergeIntervals=(intervals)=>{
     if(!intervals.length) return []
     const sorted = [...intervals].sort((a, b)=> a[0] - b[0])
@@ -128,6 +142,8 @@ const mergeIntervals=(intervals)=>{
 
 console.log(mergeIntervals([[1,3],[8,10],[2,6],[15,18]]))
 
+/* --- */
+
 const maxSubArray=(nums)=>{
     let current = nums[0]
     let best = nums[0]
@@ -139,6 +155,8 @@ const maxSubArray=(nums)=>{
 }
 
 console.log(maxSubArray([-2,1,-3,4,-1,2,1,-5,4]))
+
+/* --- */
 
 const lengthOfLongestSubstring=(s)=>{
     const lastSeen = new Map()
@@ -157,6 +175,8 @@ const lengthOfLongestSubstring=(s)=>{
 
 console.log(lengthOfLongestSubstring('abcabcbb'))
 
+/* --- */
+
 const binarySearch=(arr, target)=>{
     let low = 0
     let high = arr.length - 1
@@ -173,6 +193,8 @@ const binarySearch=(arr, target)=>{
 }
 
 console.log(binarySearch([1,3,5,7,9,11],7))
+
+/* --- */
 
 const searchRotated=(nums, target)=>{
     let low = 0
@@ -202,6 +224,8 @@ const searchRotated=(nums, target)=>{
 
 console.log(searchRotated([4,5,6,7,0,1,2],0))
 
+/* --- */
+
 const isValid=(s)=>{
     const pairs = { ')': '(', ']': '[', '}': '{' }
     const stack = []
@@ -218,6 +242,8 @@ const isValid=(s)=>{
 console.log(isValid('{[()]}'))
 console.log(isValid('{[(])}'))
 
+/* --- */
+
 const nextGreater=(arr)=>{
     const result = new Array(arr.length).fill(-1)
     const stack = []
@@ -231,6 +257,8 @@ const nextGreater=(arr)=>{
 }
 
 console.log(nextGreater([4,5,2,25,7,8]))
+
+/* --- */
 
 class ListNode{
     constructor(val, next = null){
@@ -264,6 +292,8 @@ const reverseList=(head)=>{
 
 console.log(toArray(reverseList(fromArray([1,2,3,4,5]))))
 
+/* --- */
+
 class ListNode{
     constructor(val, next = null){
         this.val = val
@@ -291,6 +321,8 @@ console.log(hasCycle(a))
 
 d.next = b // creates a cycle
 console.log(hasCycle(a))
+
+/* --- */
 
 class TreeNode{
     constructor(val, left = null, right = null){
@@ -323,6 +355,8 @@ const root1 = new TreeNode(1,
     new TreeNode(3, null, new TreeNode(6))
 )
 console.log(levelOrder(root1))
+
+/* --- */
 
 class TreeNode{
     constructor(val, left = null, right = null){
@@ -362,6 +396,8 @@ console.log(preorder(root))
 console.log(inorder(root))
 console.log(postorder(root))
 
+/* --- */
+
 const flatten=(arr)=>{
     const result = []
     for(const item of arr){
@@ -376,6 +412,8 @@ const flatten=(arr)=>{
 
 console.log(flatten([1,[2,[3,[4,5]],6],[7]]))
 console.log([1,[2,[3,[4,5]],6],[7]].flat(Infinity))
+
+/* --- */
 
 class LRUCache{
     constructor(capacity){
@@ -410,6 +448,7 @@ lru.put(3, 'three')
 console.log(lru.get(2))
 console.log(lru.get(3))
 
+/* --- */
 
 let apiCount = 0
 
@@ -458,3 +497,40 @@ const retry = (fn, retries, delay)=>{
 retry(fetchApi, 3, 2000)
     .then((res)=> console.log(res))
     .catch((err)=> console.log(err))
+
+
+
+/* --- */
+
+class Stack{
+    constructor(){
+        this.data=[],
+        this.top = -1
+    }
+
+    push(value){
+        this.top++;
+        this.data[this.top] = value
+    }
+    pop(){
+        let removed = this.data[this.top]
+        this.data.length = this.top;
+        this.top--;
+        return removed
+
+    }
+    display(){
+        return this.data
+    }
+    
+}
+
+
+let stack = new Stack()
+stack.push(1)
+stack.push(2)
+stack.pop()
+stack.push(3)
+console.log(stack.data)
+
+/* --- */

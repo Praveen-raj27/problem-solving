@@ -282,9 +282,10 @@
     <script>
         var DECL = /^(?:export\s+)?(?:async\s+function|function|class|const|let|var)\b/;
         var NAME = /^(?:export\s+)?(?:async\s+)?(?:function\s*\*?\s*(\w+)|class\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?(?:function\b|\(|\w+\s*=>))/;
-        var LOG = /^\s*console\.log\s*\(/;
+
         var META = /^\s*\/\/\s*@(title|desc|note)\s+(.*?)\s*$/;
-        var SEP = /^\s*\/\/\s*-{3,}\s*$/;
+        var SEP = /^\s*\/\*\s*-{3,}\s*\*\/\s*$/;
+
         var PROBLEMS = [];
 
         // Descriptions shown above each solution, matched by the function (or class) name in code.js.
@@ -352,31 +353,29 @@
             return t.charAt(0).toUpperCase() + t.slice(1);
         }
         function parseProblems(src) {
-            var sc = scanLines(src), lines = sc.lines, top = sc.top, chunks = [], cur = [], hasLog = false;
+            var sc = scanLines(src), lines = sc.lines, top = sc.top, chunks = [], cur = [];
             function flush() {
                 var c = trimBlank(cur);
                 if (c.some(function (l) { return !isComment(l); })) chunks.push(c);
-                cur = []; hasLog = false;
+                cur = [];
             }
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i];
                 if (top[i] && SEP.test(line)) { flush(); continue; }
-                if (top[i] && hasLog && DECL.test(line)) {
-                    var carry = [];
-                    while (cur.length && isComment(cur[cur.length - 1])) carry.unshift(cur.pop());
-                    flush(); cur = carry;
-                }
                 cur.push(line);
-                if (top[i] && LOG.test(line)) hasLog = true;
             }
             flush();
             return chunks.map(function (c, n) {
                 var meta = {}, body = [], name = "";
                 c.forEach(function (l) { var m = META.exec(l); if (m) meta[m[1]] = m[2]; else body.push(l); });
                 body = trimBlank(body);
-                for (var j = 0; j < body.length && !LOG.test(body[j]); j++) {
+                for (var j = 0; j < body.length; j++) {
                     var m = NAME.exec(body[j]);
-                    if (m) name = m[1] || m[2] || m[3];
+
+                    if (m) {
+                        name = m[1] || m[2] || m[3];
+                        break;
+                    }
                 }
                 return { title: meta.title || (name ? humanize(name) : "Problem " + (n + 1)), sub: name, desc: meta.desc || DESCRIPTIONS[name] || "", note: meta.note || NOTES[name] || "", code: body.join("\n") };
             });
@@ -434,7 +433,7 @@
             if (location.hash !== "#p" + (i + 1)) history.replaceState(null, "", "#p" + (i + 1));
         }
         function fromHash() {
-            if (!PROBLEMS.length) { main.innerHTML = "<h2>No problems found</h2><p class=\"desc\">Add a solution followed by a console.log line to code.js.</p>"; return; }
+            if (!PROBLEMS.length) { main.innerHTML = "<h2>No problems found</h2><p class=\"desc\">Add a solution and separate each problem with a /* --- */ line in code.js.</p>"; return; }
             var m = /^#p(\d+)$/.exec(location.hash), i = m ? parseInt(m[1], 10) - 1 : 0;
             show(i >= 0 && i < PROBLEMS.length ? i : 0);
         }
